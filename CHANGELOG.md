@@ -1,3 +1,10 @@
+## 0.3.0
+
+- Always scaffolds an `assets/` folder with subfolders for images, icons, fonts, animations, and translations
+- Drops in tiny placeholder files so `flutter run` works on first try with no missing-asset errors
+- Auto-registers asset paths in `pubspec.yaml` (except fonts, which need their own block)
+- Generates `lib/core/constants/app_assets.dart` with typed paths so widgets reference assets by constant, not string
+
 ## 0.2.0
 
 - Added optional code generation for Riverpod (riverpod_generator + freezed)

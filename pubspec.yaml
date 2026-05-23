@@ -1,6 +1,6 @@
 name: flutter_arch_cli
 description: A CLI tool to scaffold Flutter projects with your chosen architecture, state management, and production-ready extras.
-version: 0.2.0
+version: 0.3.0
 homepage: https://github.com/JesutoniAderibigbe/flutter_arch_cli
 repository: https://github.com/JesutoniAderibigbe/flutter_arch_cli
 issue_tracker: https://github.com/JesutoniAderibigbe/flutter_arch_cli/issues

@@ -14,6 +14,13 @@ class FileWriter {
     await file.writeAsString(content);
   }
 
+  Future<void> writeBinaryFile(String relativePath, List<int> bytes) async {
+    final fullPath = p.join(projectPath, relativePath);
+    final file = File(fullPath);
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes(bytes);
+  }
+
   Future<void> createDirectory(String relativePath) async {
     final fullPath = p.join(projectPath, relativePath);
     await Directory(fullPath).create(recursive: true);
