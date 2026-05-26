@@ -19,6 +19,7 @@ import '../utils/file_writer.dart';
 import '../utils/process_runner.dart';
 import 'architectures/clean_architecture_generator.dart';
 import 'architectures/feature_first_generator.dart';
+import 'extras/agent_context_generator.dart';
 
 class ProjectGenerator {
   ProjectGenerator({
@@ -85,6 +86,10 @@ class ProjectGenerator {
     final progress = logger.progress('Scaffolding extras');
 
     await AssetsGenerator(config: config, fileWriter: fileWriter).generate();
+
+    if (config.extras.contains(Extra.agentContext)) {
+  await AgentContextGenerator(config: config, fileWriter: fileWriter).generate();
+}
 
     if (config.extras.contains(Extra.networking)) {
       await NetworkingGenerator(config: config, fileWriter: fileWriter)

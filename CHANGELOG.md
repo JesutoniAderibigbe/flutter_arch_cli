@@ -1,3 +1,9 @@
+## 0.4.0
+
+- Added optional "AI agent context" extra that generates `CLAUDE.md`, `AGENTS.md`, and `.cursorrules` files
+- Content adapts to architecture, state management, codegen, networking, and storage choices
+- Files travel with the repo so every contributor's AI agent (Claude Code, Cursor, Windsurf, Copilot, etc.) gets the right project conventions
+
 ## 0.3.0
 
 - Always scaffolds an `assets/` folder with subfolders for images, icons, fonts, animations, and translations

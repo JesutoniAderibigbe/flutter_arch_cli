@@ -126,31 +126,33 @@ bool _askUseCodegen() {
   }
 
   Set<Extra> _askExtras() {
-    const optionLabels = [
-      'Networking (dio + interceptors)',
-      'Local storage (shared_preferences + hive)',
-      'Theming (light/dark, Material 3)',
-      'Linting (very_good_analysis)',
-      'Tests folder structure',
-    ];
+  const optionLabels = [
+    'Networking (dio + interceptors)',
+    'Local storage (shared_preferences + hive + more)',
+    'Theming (light/dark, Material 3)',
+    'Linting (very_good_analysis)',
+    'Tests folder structure',
+    'AI agent context (CLAUDE.md, AGENTS.md, .cursorrules)',
+  ];
 
-    final selectedIndices = MultiSelect(
-      prompt: 'Pick the extras you want set up (space to toggle, enter to confirm)',
-      options: optionLabels,
-      defaults: [true, true, true, true, true],
-    ).interact();
+  final selectedIndices = MultiSelect(
+    prompt: 'Pick the extras you want set up (space to toggle, enter to confirm)',
+    options: optionLabels,
+    defaults: [true, true, true, true, true, true],
+  ).interact();
 
-    final extras = <Extra>{};
-    for (final index in selectedIndices) {
-      extras.add(switch (index) {
-        0 => Extra.networking,
-        1 => Extra.storage,
-        2 => Extra.theming,
-        3 => Extra.linting,
-        4 => Extra.tests,
-        _ => throw StateError('Unknown extra index: $index'),
-      });
-    }
-    return extras;
+  final extras = <Extra>{};
+  for (final index in selectedIndices) {
+    extras.add(switch (index) {
+      0 => Extra.networking,
+      1 => Extra.storage,
+      2 => Extra.theming,
+      3 => Extra.linting,
+      4 => Extra.tests,
+      5 => Extra.agentContext,
+      _ => throw StateError('Unknown extra index: $index'),
+    });
   }
+  return extras;
+}
 }

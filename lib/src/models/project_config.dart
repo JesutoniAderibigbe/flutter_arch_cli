@@ -2,7 +2,7 @@ enum Architecture { cleanArchitecture, featureFirst }
 
 enum StateManagement { riverpod, bloc, provider }
 
-enum Extra { networking, storage, theming, linting, tests }
+enum Extra { networking, storage, theming, linting, tests, agentContext }
 
 enum Storage { sharedPreferences, hive, isar, sqflite, secureStorage }
 

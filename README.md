@@ -57,6 +57,7 @@ You can spend the first half-day of every new project answering these questions.
 - **Lint setup** — `very_good_analysis` with sensible overrides
 - **Tests folder** — mirrors your `lib/` structure
 - **A working `main.dart`** — `flutter run` launches a real, interactive app the moment generation finishes
+- **AI agent context** — optional `CLAUDE.md`, `AGENTS.md`, and `.cursorrules` files so Claude Code, Cursor, Windsurf, Copilot and every other AI agent picks up your project's conventions automatically
 
 ## Install
 
@@ -222,6 +223,23 @@ The result: strict where it matters, quiet where it'd just create noise.
 ### Tests
 
 A `test/` folder is scaffolded that mirrors your `lib/` structure, with a placeholder test in your sample feature. Replace it with real tests as you go — the directory shape is already set up so you never have to think about where a new test file belongs.
+
+### AI agent context
+
+If you tick the "AI agent context" extra, the CLI generates three files at your project root that adapt to your specific choices:
+
+- **`CLAUDE.md`** — read by Claude Code
+- **`AGENTS.md`** — the emerging AI-agnostic standard, read by Cursor, Windsurf, and others
+- **`.cursorrules`** — Cursor's older format, still widely used
+
+The content is generated to match the architecture and state management you picked — a Bloc project gets Bloc conventions, a Riverpod-with-codegen project gets the `@riverpod` + `freezed` patterns spelled out. The agent then has correct guidance from the moment it opens the project, including:
+
+- Folder conventions and where new code belongs
+- How to add a new feature, model, repository, or screen
+- Hard rules about not bypassing the architecture, not hardcoding assets, not introducing alternative state management
+- Codegen commands if applicable
+
+These files are designed to travel with the repo, so every contributor on the project benefits regardless of which AI tool they use.
 
 ## Generated project structure
 
