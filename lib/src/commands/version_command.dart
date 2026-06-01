@@ -1,1 +1,1 @@
- const String packageVersion = '0.4.0';
+ const String packageVersion = '0.4.1';

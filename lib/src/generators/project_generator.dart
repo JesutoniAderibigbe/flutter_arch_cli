@@ -35,22 +35,22 @@ class ProjectGenerator {
   late final ProcessRunner processRunner;
 
   Future<bool> generate() async {
-    projectPath = p.join(Directory.current.path, config.projectName);
-    fileWriter = FileWriter(projectPath);
-    processRunner = ProcessRunner(logger: logger);
+  projectPath = p.join(Directory.current.path, config.projectName);
+  fileWriter = FileWriter(projectPath);
+  processRunner = ProcessRunner(logger: logger);
 
-    if (!await _runFlutterCreate()) return false;
-    await _cleanDefaults();
-    await _scaffoldArchitecture();
-    await _scaffoldStateManagement();
-    await _scaffoldExtras();
-    await _addDependencies();
-    await _scaffoldMainDart();
-    if (!await _runPubGet()) return false;
-    await _runBuildRunner();
+  if (!await _runFlutterCreate()) return false;
+  await _cleanDefaults();
+  await _scaffoldArchitecture();
+  await _scaffoldStateManagement();
+  await _scaffoldExtras();
+  if (!await _addDependencies()) return false;
+  await _scaffoldMainDart();
+  if (!await _runPubGet()) return false;
+  await _runBuildRunner();
 
-    return true;
-  }
+  return true;
+}
 
   Future<void> _runBuildRunner() async {
     if (!config.useCodegen) return;
@@ -181,77 +181,111 @@ class ProjectGenerator {
     progress.complete('State management scaffolded');
   }
 
-  Future<void> _addDependencies() async {
-    final progress = logger.progress('Updating pubspec dependencies');
+  Future<bool> _addDependencies() async {
+  final progress = logger.progress('Adding dependencies (resolving latest)');
 
-    final editor = PubspecEditor(projectPath);
-    final deps = <String, String>{};
-    final devDeps = <String, String>{};
+  final deps = <String>[];
+  final devDeps = <String>[];
 
-    await editor.addAssets([
-      'assets/images/',
-      'assets/icons/',
-      'assets/animations/',
-      'assets/translations/',
-    ]);
-
-    // State management
-    switch (config.stateManagement) {
-      case StateManagement.riverpod:
-        deps['flutter_riverpod'] = '^2.5.1';
-        if (config.useCodegen) {
-          deps['riverpod_annotation'] = '^2.3.5';
-          deps['freezed_annotation'] = '^2.4.4';
-          devDeps['build_runner'] = '^2.4.13';
-          devDeps['riverpod_generator'] = '^2.4.3';
-          devDeps['freezed'] = '^2.5.7';
-        }
-        break;
-      case StateManagement.bloc:
-        deps['flutter_bloc'] = '^8.1.6';
-        break;
-      case StateManagement.provider:
-        deps['provider'] = '^6.1.2';
-        break;
-    }
-    // Extras
-    if (config.extras.contains(Extra.networking)) {
-      deps['dio'] = '^5.7.0';
-    }
-    if (config.extras.contains(Extra.storage)) {
-      for (final option in config.storageOptions) {
-        switch (option) {
-          case Storage.sharedPreferences:
-            deps['shared_preferences'] = '^2.3.2';
-            break;
-          case Storage.hive:
-            deps['hive'] = '^2.2.3';
-            deps['hive_flutter'] = '^1.1.0';
-            break;
-          case Storage.isar:
-            deps['isar'] = '^3.1.0+1';
-            deps['isar_flutter_libs'] = '^3.1.0+1';
-            deps['path_provider'] = '^2.1.4';
-            break;
-          case Storage.sqflite:
-            deps['sqflite'] = '^2.3.3+1';
-            deps['path'] = '^1.9.0';
-            break;
-          case Storage.secureStorage:
-            deps['flutter_secure_storage'] = '^9.2.2';
-            break;
-        }
-      }
-    }
-    if (config.extras.contains(Extra.linting)) {
-      devDeps['very_good_analysis'] = '^6.0.0';
-    }
-
-    await editor.addDependencies(deps);
-    await editor.addDevDependencies(devDeps);
-    progress.complete('Dependencies updated');
+  // State management
+  switch (config.stateManagement) {
+   case StateManagement.riverpod:
+  deps.add('flutter_riverpod');
+  if (config.useCodegen) {
+    deps.add('riverpod_annotation:^3.0.0');
+    deps.add('freezed_annotation:^3.0.0');
+    devDeps.add('build_runner');
+    devDeps.add('riverpod_generator:^3.0.0');
+    devDeps.add('freezed:^3.0.0');
+  }
+  
+      break;
+    case StateManagement.bloc:
+      deps.add('flutter_bloc');
+      break;
+    case StateManagement.provider:
+      deps.add('provider');
+      break;
   }
 
+  // Networking
+  if (config.extras.contains(Extra.networking)) {
+    deps.add('dio');
+  }
+
+  // Storage
+  if (config.extras.contains(Extra.storage)) {
+    for (final option in config.storageOptions) {
+      switch (option) {
+        case Storage.sharedPreferences:
+          deps.add('shared_preferences');
+          break;
+        case Storage.hive:
+          deps.add('hive');
+          deps.add('hive_flutter');
+          break;
+        case Storage.isar:
+          deps.add('isar');
+          deps.add('isar_flutter_libs');
+          deps.add('path_provider');
+          break;
+        case Storage.sqflite:
+          deps.add('sqflite');
+          deps.add('path');
+          break;
+        case Storage.secureStorage:
+          deps.add('flutter_secure_storage');
+          break;
+      }
+    }
+  }
+
+  // Linting
+  if (config.extras.contains(Extra.linting)) {
+    devDeps.add('very_good_analysis');
+  }
+
+  // Add deps in one call - faster than one-at-a-time
+  if (deps.isNotEmpty) {
+    final ok = await processRunner.run(
+      'flutter',
+      ['pub', 'add', ...deps],
+      workingDirectory: projectPath,
+      silent: false,
+    );
+    if (!ok) {
+      progress.fail('Failed to add dependencies');
+      return false;
+    }
+  }
+
+  // Add dev deps with the dev: prefix
+  if (devDeps.isNotEmpty) {
+    final devArgs = devDeps.map((d) => 'dev:$d').toList();
+    final ok = await processRunner.run(
+      'flutter',
+      ['pub', 'add', ...devArgs],
+      workingDirectory: projectPath,
+      silent: false,
+    );
+    if (!ok) {
+      progress.fail('Failed to add dev dependencies');
+      return false;
+    }
+  }
+
+  // Asset paths still need yaml_edit
+  final editor = PubspecEditor(projectPath);
+  await editor.addAssets([
+    'assets/images/',
+    'assets/icons/',
+    'assets/animations/',
+    'assets/translations/',
+  ]);
+
+  progress.complete('Dependencies added');
+  return true;
+}
   Future<bool> _runPubGet() async {
     final progress = logger.progress('Running flutter pub get');
     final success = await processRunner.run(

@@ -35,7 +35,7 @@ class SampleProvider extends ChangeNotifier {
       // TODO: replace with real data source call.
       await Future<void>.delayed(const Duration(milliseconds: 300));
       _items = const ['Sample 1', 'Sample 2', 'Sample 3'];
-    } catch (e) {
+    } catch (e) {e
       _error = e.toString();
     } finally {
       _isLoading = false;

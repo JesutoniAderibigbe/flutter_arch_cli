@@ -57,7 +57,7 @@ class MainDartGenerator {
       imports.add(
         "import 'package:${config.projectName}/core/storage/preferences_service.dart';",
       );
-      imports.add("import 'package:flutter/foundation.dart';");
+     // imports.add("import 'package:flutter/foundation.dart';");
       initLines.add('  final preferencesService = await PreferencesService.init();');
       initLines.add(
         "  debugPrint('PreferencesService ready: \${preferencesService.runtimeType}');",

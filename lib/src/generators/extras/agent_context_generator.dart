@@ -110,6 +110,8 @@ ${_addRepositoryGuidance()}
 ${_addScreenGuidance()}
 
 ## Project structure (top level)
+
+```
 ${config.projectName}/
 ├── assets/                  # images, icons, fonts, animations, translations
 ├── lib/
@@ -125,12 +127,14 @@ ${config.projectName}/
 ├── test/                    # tests mirroring lib/
 ├── analysis_options.yaml
 └── pubspec.yaml
+```
 ''';
   }
 
   String _architectureLabel() {
     return switch (config.architecture) {
-      Architecture.cleanArchitecture => 'Clean Architecture (data / domain / presentation layers per feature)',
+      Architecture.cleanArchitecture =>
+        'Clean Architecture (data / domain / presentation layers per feature)',
       Architecture.featureFirst => 'Feature-first (flat structure per feature)',
     };
   }
@@ -178,12 +182,15 @@ Shared infrastructure (network client, storage, theme, errors) lives in `lib/cor
 ''',
       Architecture.featureFirst => '''
 This project uses **Feature-first** architecture. Each feature is a self-contained directory:
+
+```
 lib/features/<feature>/
 ├── models/         # data classes with fromJson/toJson
 ├── repository/     # concrete repository (no abstract layer)
 ├── pages/          # screen-level widgets
 ├── widgets/        # feature-specific widgets
 └── <state_folder>/ # state management
+```
 
 There is no three-layer split. Repositories are concrete, not abstract. This is intentional — it's the right pattern for small to medium apps where Clean Architecture's ceremony would slow you down.
 
@@ -198,11 +205,11 @@ Shared infrastructure (network client, storage, theme, errors) lives in `lib/cor
           ? '''
 This project uses **Riverpod with code generation** (`riverpod_generator` + `freezed`).
 
-State classes are immutable, generated with `@freezed`:
+State classes are immutable, generated with `@freezed`. Note the `abstract` modifier — it is required in freezed 3.x for simple data classes:
 
 ```dart
 @freezed
-class SampleState with _\$SampleState {
+abstract class SampleState with _\$SampleState {
   const factory SampleState({
     @Default(false) bool isLoading,
     @Default(<String>[]) List<String> items,
@@ -238,20 +245,29 @@ class SamplePage extends ConsumerWidget {
 ```
 
 To trigger actions: `ref.read(sampleProvider.notifier).loadSamples()`.
+
+### Riverpod 3.x behaviors to know
+
+- **Auto-retry by default.** Failed providers retry up to 10 times with exponential backoff (200ms doubling up to 6.4s max). Override via `ProviderScope.retry` if you need different behavior.
+- **Equality via `==`.** Providers compare new and old state with `==` to decide whether to notify listeners. Since `SampleState` is a freezed class with value equality, this works correctly out of the box.
+- **Errors wrapped in `ProviderException`.** When `ref.watch` rethrows an error, it is wrapped in `ProviderException`. Catch that type when handling provider errors at the widget layer.
+- **`Ref.mounted`.** Safely check if a provider is still mounted before updating state in async operations: `if (!ref.mounted) return;`.
 '''
           : '''
 This project uses **Riverpod** with manual providers (no code generation).
 
-State classes are immutable, written by hand with a `copyWith` method. `StateNotifier` is the notifier base class:
+State classes are immutable, written by hand with a `copyWith` method. `Notifier` is the notifier base class (not the legacy `StateNotifier`):
 
 ```dart
-class SampleNotifier extends StateNotifier<SampleState> {
-  SampleNotifier() : super(const SampleState());
+class SampleNotifier extends Notifier<SampleState> {
+  @override
+  SampleState build() => const SampleState();
+
   Future<void> loadSamples() async { ... }
 }
 
-final sampleProvider = StateNotifierProvider<SampleNotifier, SampleState>(
-  (ref) => SampleNotifier(),
+final sampleProvider = NotifierProvider<SampleNotifier, SampleState>(
+  SampleNotifier.new,
 );
 ```
 
@@ -261,6 +277,15 @@ Consume providers in widgets via `ConsumerWidget` or `Consumer`:
 final state = ref.watch(sampleProvider);
 ref.read(sampleProvider.notifier).loadSamples();
 ```
+
+Do not use `StateNotifier` or `StateNotifierProvider` — they are legacy in Riverpod 3.x and require a `package:flutter_riverpod/legacy.dart` import. `Notifier` is the recommended API for new code.
+
+### Riverpod 3.x behaviors to know
+
+- **Auto-retry by default.** Failed providers retry up to 10 times with exponential backoff (200ms doubling up to 6.4s max). Override via `ProviderScope.retry` if you need different behavior.
+- **Equality via `==`.** Providers compare new and old state with `==` to decide whether to notify listeners. Since the hand-written `SampleState` does not override `==`, every `state = state.copyWith(...)` notifies listeners, even when nothing changed. If this becomes a problem, override `==` and `hashCode` on your state classes — or migrate to freezed (turn on codegen) for free value equality.
+- **Errors wrapped in `ProviderException`.** When `ref.watch` rethrows an error, it is wrapped in `ProviderException`. Catch that type when handling provider errors at the widget layer.
+- **`Ref.mounted`.** Safely check if a provider is still mounted before updating state in async operations: `if (!ref.mounted) return;`.
 ''',
       StateManagement.bloc => '''
 This project uses **Bloc** (`flutter_bloc`).
@@ -341,19 +366,21 @@ Providers are wired up via `MultiProvider` in `main.dart`.
 To add a feature called `orders`:
 
 1. Create the folder structure:
-lib/features/orders/
-├── data/
-│   ├── datasources/
-│   ├── models/
-│   └── repositories/
-├── domain/
-│   ├── entities/
-│   ├── repositories/
-│   └── usecases/
-└── presentation/
-├── pages/
-├── widgets/
-└── ${_stateFolderName()}/
+   ```
+   lib/features/orders/
+   ├── data/
+   │   ├── datasources/
+   │   ├── models/
+   │   └── repositories/
+   ├── domain/
+   │   ├── entities/
+   │   ├── repositories/
+   │   └── usecases/
+   └── presentation/
+       ├── pages/
+       ├── widgets/
+       └── ${_stateFolderName()}/
+   ```
 2. Define the entity in `domain/entities/order.dart` (pure Dart, no Flutter imports)
 3. Define the abstract repository in `domain/repositories/order_repository.dart`
 4. Define usecases in `domain/usecases/` (one class per usecase)
@@ -366,12 +393,14 @@ lib/features/orders/
 To add a feature called `orders`:
 
 1. Create the folder structure:
-lib/features/orders/
-├── models/
-├── repository/
-├── pages/
-├── widgets/
-└── ${_stateFolderName()}/
+   ```
+   lib/features/orders/
+   ├── models/
+   ├── repository/
+   ├── pages/
+   ├── widgets/
+   └── ${_stateFolderName()}/
+   ```
 2. Define the data class in `models/order.dart`
 3. Define the concrete repository in `repository/order_repository.dart`
 4. Build the ${_stateManagementLabel()} state management in `${_stateFolderName()}/`
@@ -411,24 +440,36 @@ When adding a new endpoint, write a typed method in your feature's repository th
       return 'No storage is configured for this project.';
     }
     final buf = StringBuffer();
-    buf.writeln('Storage services live in `lib/core/storage/`. Use these wrappers — do not call the underlying packages directly from features.');
+    buf.writeln(
+      'Storage services live in `lib/core/storage/`. Use these wrappers — do not call the underlying packages directly from features.',
+    );
     buf.writeln();
     for (final s in config.storageOptions) {
       switch (s) {
         case Storage.sharedPreferences:
-          buf.writeln('- **`PreferencesService`** (`shared_preferences`) — simple key-value, good for user settings and feature flags. Get an instance via `PreferencesService.init()`.');
+          buf.writeln(
+            '- **`PreferencesService`** (`shared_preferences`) — simple key-value, good for user settings and feature flags. Get an instance via `PreferencesService.init()`.',
+          );
           break;
         case Storage.hive:
-          buf.writeln('- **`HiveService`** (`hive`) — fast NoSQL boxes, good for cached domain models. Access via `HiveService.instance`.');
+          buf.writeln(
+            '- **`HiveService`** (`hive`) — fast NoSQL boxes, good for cached domain models. Access via `HiveService.instance`.',
+          );
           break;
         case Storage.isar:
-          buf.writeln('- **`IsarService`** (`isar`) — modern type-safe DB with built-in querying. Initialize with schemas via `IsarService.instance.init(schemas: [...])`.');
+          buf.writeln(
+            '- **`IsarService`** (`isar`) — modern type-safe DB with built-in querying. Initialize with schemas via `IsarService.instance.init(schemas: [...])`.',
+          );
           break;
         case Storage.sqflite:
-          buf.writeln('- **`DatabaseService`** (`sqflite`) — classic SQL. Add table creation in the `onCreate` callback.');
+          buf.writeln(
+            '- **`DatabaseService`** (`sqflite`) — classic SQL. Add table creation in the `onCreate` callback.',
+          );
           break;
         case Storage.secureStorage:
-          buf.writeln('- **`SecureStorageService`** (`flutter_secure_storage`) — encrypted, the right home for auth tokens and other secrets. Access via `SecureStorageService.instance`.');
+          buf.writeln(
+            '- **`SecureStorageService`** (`flutter_secure_storage`) — encrypted, the right home for auth tokens and other secrets. Access via `SecureStorageService.instance`.',
+          );
           break;
       }
     }
@@ -457,8 +498,10 @@ Use `Theme.of(context).colorScheme` in widgets — never hardcode colors.
 
   String _architectureRule() {
     return switch (config.architecture) {
-      Architecture.cleanArchitecture => 'Do not import from `data/` in `presentation/`. Cross the boundary via the abstract repository in `domain/`.',
-      Architecture.featureFirst => 'Do not import from one feature into another. Shared code goes in `lib/core/` or a separate shared feature.',
+      Architecture.cleanArchitecture =>
+        'Do not import from `data/` in `presentation/`. Cross the boundary via the abstract repository in `domain/`.',
+      Architecture.featureFirst =>
+        'Do not import from one feature into another. Shared code goes in `lib/core/` or a separate shared feature.',
     };
   }
 
@@ -535,7 +578,9 @@ When making changes:
 - Use `Theme.of(context).colorScheme` for colors, never hardcoded values.
 - Do not weaken lints in `analysis_options.yaml` to suppress warnings; fix the underlying issue.
 - Do not commit generated files (`.g.dart`, `.freezed.dart`).
+${config.stateManagement == StateManagement.riverpod ? '- Do not use `StateNotifier` or `StateNotifierProvider` (legacy in Riverpod 3.x). Use `Notifier` and `NotifierProvider` instead.' : ''}
 ${config.stateManagement == StateManagement.riverpod && config.useCodegen ? '- After editing annotated files, run: dart run build_runner build --delete-conflicting-outputs' : ''}
+${config.stateManagement == StateManagement.riverpod && config.useCodegen ? '- Freezed 3.x requires the `abstract` modifier on simple data classes: `@freezed abstract class Foo with _\$Foo { ... }`' : ''}
 
 See CLAUDE.md / AGENTS.md for full conventions including how to add new features, models, repositories, and screens.
 ''';

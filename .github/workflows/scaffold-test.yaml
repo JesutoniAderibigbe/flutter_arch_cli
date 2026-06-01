@@ -1,0 +1,25 @@
+name: Weekly scaffold smoke test
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # every Monday 06:00 UTC
+  workflow_dispatch:      # also run on demand
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: dart pub get
+      - run: dart pub global activate --source path .
+      - name: Scaffold and analyze Riverpod + codegen
+        run: |
+          mkdir -p /tmp/scaffold
+          cd /tmp/scaffold
+          echo "com.test\n1\n1\ny\n5\n1 2 3 4 5\n1 5" | flutter_arch create smoke_riverpod || true
+          cd smoke_riverpod
+          flutter analyze
+          flutter test

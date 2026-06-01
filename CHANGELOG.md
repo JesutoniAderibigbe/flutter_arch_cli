@@ -1,3 +1,19 @@
+## 0.5.0
+
+- Dependencies are now resolved to the latest compatible versions at scaffold time using `flutter pub add` instead of being pinned in the CLI, so generated projects automatically get current packages without needing version-bump releases
+- Migrated the Riverpod codegen stack to 3.x (`flutter_riverpod` resolves to latest 3.x, `riverpod_annotation: ^3.0.0`, `riverpod_generator: ^3.0.0`) — the class-based codegen pattern is unchanged between 2.x and 3.x, so existing templates compile cleanly against the new versions
+- Migrated the freezed templates to 3.x syntax (`abstract class SampleState with _$SampleState` — the `abstract` modifier is required in freezed 3.x for simple data classes); pinned `freezed: ^3.0.0` and `freezed_annotation: ^3.0.0`
+- Migrated the manual Riverpod template from `StateNotifier` (now legacy in Riverpod 3.x, requires `package:flutter_riverpod/legacy.dart`) to `Notifier` + `NotifierProvider`, the recommended API for new code
+- Agent context files (CLAUDE.md, AGENTS.md) updated to describe Riverpod 3.x behaviors: auto-retry by default, `==`-based equality checks, `ProviderException` wrapping, and `Ref.mounted`
+- Cleaned up lint warnings in generated code so `flutter analyze` is clean on first run:
+  - `auth_interceptor.dart` now exposes both a getter and setter for `token`
+  - `preferences_service.setBool` uses a named `value` parameter
+  - All state management templates use `on Exception catch (e)` instead of bare `catch (e)`
+  - Removed unnecessary `foundation.dart` import from generated `main.dart`
+  - Cleaned up `app_assets.dart` to remove a dead private field
+
+Thanks to community feedback for flagging the outdated `StateNotifier` template and stale dependency versions.
+
 ## 0.4.0
 
 - Added optional "AI agent context" extra that generates `CLAUDE.md`, `AGENTS.md`, and `.cursorrules` files

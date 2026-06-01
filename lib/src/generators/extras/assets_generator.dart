@@ -153,7 +153,7 @@ class AppAssets {
   static const _animationsPath = 'assets/animations';
   static const _translationsPath = 'assets/translations';
 
-  // ignore: unused_field
+   // ignore: unused_field, reason: kept for symmetry with other paths; will be used when fonts are referenced from code
   static const _fontsPath = 'assets/fonts';
 
   // Images

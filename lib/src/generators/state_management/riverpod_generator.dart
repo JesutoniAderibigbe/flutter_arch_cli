@@ -60,8 +60,9 @@ class SampleState {
   }
 }
 
-class SampleNotifier extends StateNotifier<SampleState> {
-  SampleNotifier() : super(const SampleState());
+class SampleNotifier extends Notifier<SampleState> {
+  @override
+  SampleState build() => const SampleState();
 
   Future<void> loadSamples() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -71,24 +72,24 @@ class SampleNotifier extends StateNotifier<SampleState> {
         isLoading: false,
         items: const ['Sample 1', 'Sample 2', 'Sample 3'],
       );
-    } catch (e) {
+   } on Exception catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 }
 
-final sampleProvider = StateNotifierProvider<SampleNotifier, SampleState>(
-  (ref) => SampleNotifier(),
+final sampleProvider = NotifierProvider<SampleNotifier, SampleState>(
+  SampleNotifier.new,
 );
 ''';
 
-  String _freezedStateContent() => '''
+ String _freezedStateContent() => '''
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'sample_state.freezed.dart';
 
 @freezed
-class SampleState with _\$SampleState {
+abstract class SampleState with _\$SampleState {
   const factory SampleState({
     @Default(false) bool isLoading,
     @Default(<String>[]) List<String> items,
@@ -118,7 +119,7 @@ class Sample extends _\$Sample {
         isLoading: false,
         items: const ['Sample 1', 'Sample 2', 'Sample 3'],
       );
-    } catch (e) {
+} on Exception catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
