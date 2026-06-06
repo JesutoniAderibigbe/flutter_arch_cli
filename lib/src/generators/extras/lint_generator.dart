@@ -21,7 +21,10 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
+    - "**/*.config.dart"
+    - "**/*.mocks.dart"
     - "build/**"
+    - ".dart_tool/**"
   errors:
     invalid_annotation_target: ignore
 

@@ -39,6 +39,17 @@ class ProjectGenerator {
   fileWriter = FileWriter(projectPath);
   processRunner = ProcessRunner(logger: logger);
 
+  // Pre-flight warning for the known build hooks incompatibility
+  if (config.useCodegen && config.storageOptions.contains(Storage.secureStorage)) {
+    logger.warn(
+      'Heads up: Riverpod codegen + flutter_secure_storage may fail at the\n'
+      'build_runner step due to a known Dart SDK issue with build hooks.\n'
+      '  See: https://github.com/dart-lang/build/issues/4343\n'
+      'The project will scaffold correctly either way. Continuing.',
+    );
+    logger.info('');
+  }
+
   if (!await _runFlutterCreate()) return false;
   await _cleanDefaults();
   await _scaffoldArchitecture();
@@ -53,28 +64,54 @@ class ProjectGenerator {
 }
 
   Future<void> _runBuildRunner() async {
-    if (!config.useCodegen) return;
+  if (!config.useCodegen) return;
 
-    final progress = logger.progress('Running build_runner');
-    final success = await processRunner.run(
-      'dart',
-      ['run', 'build_runner', 'build', '--delete-conflicting-outputs'],
-      workingDirectory: projectPath,
-      silent: true,
-    );
+  final progress = logger.progress('Running build_runner');
+  final success = await processRunner.run(
+    'dart',
+    ['run', 'build_runner', 'build', '--delete-conflicting-outputs'],
+    workingDirectory: projectPath,
+    silent: true,
+  );
 
-    if (success) {
-      progress.complete('Code generation complete');
-    } else {
-      progress.fail('build_runner failed');
-      logger.info('');
-      logger.warn(
-        'You can run code generation manually:\n'
-        '  cd ${config.projectName}\n'
-        '  dart run build_runner build --delete-conflicting-outputs',
-      );
-    }
+  if (success) {
+    progress.complete('Code generation complete');
+    return;
   }
+
+  progress.fail('build_runner failed');
+  logger.info('');
+
+  // If the project uses flutter_secure_storage with codegen, this is almost
+  // certainly the known Dart SDK + build_runner + build hooks incompatibility.
+  // See: https://github.com/dart-lang/build/issues/4343
+  final likelyHooksConflict = config.storageOptions.contains(Storage.secureStorage);
+
+  if (likelyHooksConflict) {
+    logger.warn(
+      'This is most likely the known Dart SDK + build_runner + build hooks issue.\n'
+      'flutter_secure_storage uses native build hooks, which the current build_runner\n'
+      'cannot AOT-compile through. The Dart team is tracking this:\n'
+      '  https://github.com/dart-lang/build/issues/4343\n\n'
+      'Workarounds while this is being fixed:\n'
+      '  1. Run codegen against an older Dart SDK (Dart 3.9 or earlier), or\n'
+      '  2. Temporarily remove flutter_secure_storage from pubspec.yaml,\n'
+      '     run "dart run build_runner build --delete-conflicting-outputs",\n'
+      '     then add flutter_secure_storage back.\n\n'
+      'Your project is otherwise scaffolded correctly. You can keep building\n'
+      'and add the generated files (.g.dart / .freezed.dart) when codegen runs.',
+    );
+  } else {
+    logger.warn(
+      'You can try running code generation manually:\n'
+      '  cd ${config.projectName}\n'
+      '  dart run build_runner build --delete-conflicting-outputs\n\n'
+      'If that also fails, check whether any of your dependencies use Dart\n'
+      'build hooks (this is a known incompatibility tracked at\n'
+      'https://github.com/dart-lang/build/issues/4343).',
+    );
+  }
+}
 
   Future<void> _scaffoldMainDart() async {
     final progress = logger.progress('Generating main.dart');
@@ -194,12 +231,11 @@ class ProjectGenerator {
   if (config.useCodegen) {
     deps.add('riverpod_annotation:^3.0.0');
     deps.add('freezed_annotation:^3.0.0');
-    devDeps.add('build_runner');
+    devDeps.add('build_runner');                    // unpinned — let pub pick latest
     devDeps.add('riverpod_generator:^3.0.0');
     devDeps.add('freezed:^3.0.0');
   }
-  
-      break;
+  break;
     case StateManagement.bloc:
       deps.add('flutter_bloc');
       break;
@@ -251,7 +287,7 @@ class ProjectGenerator {
       'flutter',
       ['pub', 'add', ...deps],
       workingDirectory: projectPath,
-      silent: false,
+      silent: true,
     );
     if (!ok) {
       progress.fail('Failed to add dependencies');
@@ -266,7 +302,7 @@ class ProjectGenerator {
       'flutter',
       ['pub', 'add', ...devArgs],
       workingDirectory: projectPath,
-      silent: false,
+      silent: true,
     );
     if (!ok) {
       progress.fail('Failed to add dev dependencies');

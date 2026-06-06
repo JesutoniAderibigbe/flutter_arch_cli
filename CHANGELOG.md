@@ -1,4 +1,10 @@
-## 0.5.0
+## 0.4.2
+
+- Better diagnostics for the known Dart SDK + `build_runner` + build hooks incompatibility ([dart-lang/build#4343](https://github.com/dart-lang/build/issues/4343)). When the user picks Riverpod codegen alongside `flutter_secure_storage`, the CLI now prints a pre-flight warning before scaffolding and a detailed, actionable message if `build_runner` fails — instead of a generic "try running it manually" message that would fail with the same error.
+- The post-failure message now identifies the specific cause (build hooks) and gives two concrete workarounds: run codegen against an older Dart SDK, or temporarily remove `flutter_secure_storage` from `pubspec.yaml`, run `build_runner`, then re-add it.
+- This is an upstream Dart SDK issue that the Dart team is actively fixing; projects scaffolded with this CLI are otherwise unaffected. Only the auto-run of `build_runner` is impacted, and only when the specific combination is chosen.
+
+## 0.4.1
 
 - Dependencies are now resolved to the latest compatible versions at scaffold time using `flutter pub add` instead of being pinned in the CLI, so generated projects automatically get current packages without needing version-bump releases
 - Migrated the Riverpod codegen stack to 3.x (`flutter_riverpod` resolves to latest 3.x, `riverpod_annotation: ^3.0.0`, `riverpod_generator: ^3.0.0`) — the class-based codegen pattern is unchanged between 2.x and 3.x, so existing templates compile cleanly against the new versions
